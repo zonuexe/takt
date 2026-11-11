@@ -163,6 +163,7 @@ export class GlobalConfigManager {
       vcsProvider: parsed.vcs_provider as GlobalConfig['vcsProvider'],
       autoPr: parsed.auto_pr,
       draftPr: parsed.draft_pr,
+      prIssueKeyword: parsed.pr_issue_keyword as GlobalConfig['prIssueKeyword'],
       disabledBuiltins: parsed.disabled_builtins,
       enableBuiltinWorkflows: parsed.enable_builtin_workflows,
       anthropicApiKey: parsed.anthropic_api_key,

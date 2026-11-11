@@ -11,7 +11,7 @@ import type { ProviderType } from '../../shared/types/provider.js';
 import type { PermissionMode } from './types.js';
 import type { QualityGate, RateLimitFallbackConfig, StepProviderOptions, WorkflowRuntimeConfig } from './workflow-types.js';
 import type { ProviderPermissionProfiles } from './provider-profiles.js';
-import type { VcsProviderType } from './vcs-types.js';
+import type { PrIssueKeyword, VcsProviderType } from './vcs-types.js';
 
 export type RoutingTier = 'high' | 'medium' | 'low';
 export const MANAGER_NOTIFICATION_KINDS = ['question', 'awaiting_merge', 'completed', 'progress', 'blocked', 'custom'] as const;
@@ -373,6 +373,8 @@ export interface ProjectConfig {
   autoPr?: boolean;
   /** Create PR as draft */
   draftPr?: boolean;
+  /** How the PR body references the bound issue (closes | refs | none; default closes) */
+  prIssueKeyword?: PrIssueKeyword;
   /** VCS provider selection (github or gitlab) */
   vcsProvider?: VcsProviderType;
   /** Base branch to clone from (overrides global baseBranch) */

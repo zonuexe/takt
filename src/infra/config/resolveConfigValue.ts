@@ -156,6 +156,7 @@ const RESOLUTION_REGISTRY: Partial<{ [K in ConfigParameterKey]: ResolutionRule<K
   merge: { layers: ['local', 'global'] },
   autoPr: { layers: ['local', 'global'] },
   draftPr: { layers: ['local', 'global'] },
+  prIssueKeyword: { layers: ['local', 'global'] },
   analytics: { layers: ['local', 'global'], mergeMode: 'analytics' },
   telemetry: { layers: ['local', 'global'] },
   observability: { layers: ['local', 'global'], mergeMode: 'observability' },

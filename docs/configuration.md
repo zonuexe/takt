@@ -218,6 +218,7 @@ Dynamic parallel and `dynamic_facets` selectors use read-only mode with only `Re
 | `auto_pr` | boolean | - | Auto-create PR after worktree execution |
 | `caccia` | object | `{ enabled: false, wait_timeout_ms: 1800000, max_iterations: 3, workflow: "caccia" }` | CodeRabbit review-loop settings; see [Caccia Review Loop](#caccia-review-loop) |
 | `draft_pr` | boolean | `false` | Create the auto-created PR as a draft |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes` | How the PR body that TAKT writes references an issue-backed task: `Closes #N` (auto-closes the issue on merge), `Refs #N`, or no issue line. Applies to `takt run` / `takt watch` PR bodies and update comments, `takt add` and MCP-created tasks, and the `--pipeline` default body; a `pipeline.pr_body_template` is used as written and ignores this key. |
 | `minimal_output` | boolean | `false` | Suppress AI output (for CI) |
 | `runtime` | object | - | Runtime environment defaults (e.g., `prepare: [gradle, node]`) |
 | `provider_routing` | object | - | Recommended workflow-step provider/model/provider_options routing by raw persona key, step tag, and step name |
@@ -414,6 +415,7 @@ The project's `.takt/config.yaml` can override many global settings, including `
 | `auto_pr` | boolean | - | Auto-create PR after worktree execution |
 | `caccia` | object | disabled | CodeRabbit review-loop settings; see [Caccia Review Loop](#caccia-review-loop) |
 | `draft_pr` | boolean | `false` (from global) | Create the auto-created PR as a draft |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes` (from global) | Same as the global key; the project value takes precedence. |
 | `concurrency` | number (1-10) | `1` (from global) | Parallel task count for `takt run` / `takt watch` |
 | `auto_requeue_max_attempts` | non-negative integer | `0` (from global/default) | Maximum automatic requeue attempts for failed workflow tasks during `takt run` / `takt watch`; `0` disables automatic requeue |
 | `ignore_exceed` | boolean | `false` (from global/default) | Configures iteration-limit bypass for `takt run` and `takt watch`; a CLI `--ignore-exceed` flag takes precedence when specified |
@@ -1971,6 +1973,8 @@ pipeline:
 | `{issue}` | Commit message, PR body | Issue number |
 | `{issue_body}` | PR body | Issue body |
 | `{report}` | PR body | Workflow execution report |
+
+The default pipeline PR body follows `pr_issue_keyword`. A custom `pr_body_template` is expanded as written, so write `Refs #{issue}` (or omit the line) there yourself; the key does not rewrite template text.
 
 ### Pipeline CLI Options
 

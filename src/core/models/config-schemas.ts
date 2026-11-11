@@ -5,7 +5,7 @@
 import { z } from 'zod/v4';
 import { DEFAULT_LANGUAGE } from '../../shared/constants.js';
 import { MAX_ASSISTANT_INIT_FILES } from './assistant-config.js';
-import { VCS_PROVIDER_TYPES } from './vcs-types.js';
+import { PR_ISSUE_KEYWORDS, VCS_PROVIDER_TYPES } from './vcs-types.js';
 import { MAX_FORMAL_SPEC_MODEL_CHECK_TIMEOUT_SECONDS } from './config-types.js';
 import type { CacciaConfig, MergeConfig } from './config-types.js';
 import { PrListWhereRawSchema } from './workflow-system-schemas.js';
@@ -190,6 +190,7 @@ const ProjectConfigObjectBaseSchema = z.object({
   allow_git_filters: z.boolean().optional(),
   auto_pr: z.boolean().optional(),
   draft_pr: z.boolean().optional(),
+  pr_issue_keyword: z.enum(PR_ISSUE_KEYWORDS).optional(),
   pipeline: PipelineConfigSchema.optional(),
   caccia: CacciaConfigSchema.optional(),
   merge: MergeConfigSchema.optional(),

@@ -211,6 +211,7 @@ assistant:
 | `auto_pr` | boolean | - | worktree 执行后自动创建 PR |
 | `caccia` | object | `{ enabled: false, wait_timeout_ms: 1800000, max_iterations: 3, workflow: "caccia" }` | CodeRabbit 审查循环设置 |
 | `draft_pr` | boolean | `false` | 将自动创建的 PR 设为 draft |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes` | TAKT 生成的 PR 正文如何引用关联 Issue 的任务：`Closes #N`（合并时自动关闭 Issue）、`Refs #N`，或不写 Issue 行。适用于 `takt run` / `takt watch` 的 PR 正文和更新评论、`takt add` 与 MCP 创建的任务，以及 `--pipeline` 的默认正文；`pipeline.pr_body_template` 按原文使用，不受此键影响。 |
 | `minimal_output` | boolean | `false` | 抑制 AI 输出（用于 CI） |
 | `runtime` | object | - | 运行环境默认值，例如 `prepare: [gradle, node]` |
 | `provider_routing` | object | - | 按 raw persona、step tag 和 step 名称设置 provider/model/options 路由 |
@@ -418,6 +419,7 @@ TAKT 观察实际收到的 provider event，不会合成 keepalive。OpenCode �
 | `auto_pr` | boolean | - | worktree 执行后自动创建 PR |
 | `caccia` | object | disabled | CodeRabbit 审查循环设置（见上文） |
 | `draft_pr` | boolean | `false`（来自全局） | 将自动创建的 PR 设为 draft |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes`（来自全局） | 与全局键相同；项目值优先。 |
 | `concurrency` | number (1-10) | `1`（来自全局） | `takt run` / `takt watch` 并行任务数 |
 | `auto_requeue_max_attempts` | 非负整数 | `0` | 失败 workflow task 的自动 requeue 上限 (`takt run` / `takt watch`) |
 | `ignore_exceed` | boolean | `false` | `takt run` / `takt watch` 的迭代限制绕过 |
@@ -1521,6 +1523,8 @@ pipeline:
 | `{issue}` | commit message、PR body | Issue 编号 |
 | `{issue_body}` | PR body | Issue 正文 |
 | `{report}` | PR body | workflow 执行报告 |
+
+`--pipeline` 的默认 PR 正文遵循 `pr_issue_keyword`。指定 `pr_body_template` 时按原文展开，请在模板中自行写 `Refs #{issue}` 或省略该行；此键不会改写模板文本。
 
 ### Pipeline CLI 选项
 

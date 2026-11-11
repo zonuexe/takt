@@ -218,6 +218,7 @@ dynamic parallel と `dynamic_facets` の selector は読み取り専用で、`R
 | `auto_pr` | boolean | - | worktree 実行後に PR を自動作成 |
 | `caccia` | object | `{ enabled: false, wait_timeout_ms: 1800000, max_iterations: 3, workflow: "caccia" }` | CodeRabbit レビューループの設定 |
 | `draft_pr` | boolean | `false` | 自動作成する PR を draft として作成 |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes` | TAKT が書く PR 本文での、Issue 付きタスクの Issue の参照のしかた。`Closes #N`（マージ時に Issue を自動クローズ）、`Refs #N`、または Issue 行なし。`takt run` / `takt watch` の PR 本文と更新コメント、`takt add` と MCP で作ったタスク、`--pipeline` の既定本文に適用されます。`pipeline.pr_body_template` はそのまま使われ、このキーの影響を受けません。 |
 | `minimal_output` | boolean | `false` | AI 出力を抑制（CI 向け） |
 | `runtime` | object | - | ランタイム環境デフォルト（例: `prepare: [gradle, node]`） |
 | `provider_routing` | object | - | 推奨設定。raw persona キー、step tag、step name による workflow step の provider / model / provider_options ルーティング |
@@ -410,6 +411,7 @@ OpenCode の `event_limit` は既定で 500,000、`text_byte_limit` は 1 MiB、
 | `auto_pr` | boolean | - | worktree 実行後に PR を自動作成 |
 | `caccia` | object | 無効 | CodeRabbit レビューループ設定（上記参照） |
 | `draft_pr` | boolean | `false`（global 設定由来） | 自動作成する PR を draft として作成 |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes`（global 設定由来） | global 設定のキーと同じです。project の値が優先されます。 |
 | `concurrency` | number (1-10) | `1`（global 設定由来） | `takt run` / `takt watch` の並列タスク数 |
 | `auto_requeue_max_attempts` | 非負整数 | `0`（global 設定またはデフォルト由来） | `takt run` / `takt watch` 中に失敗した workflow task を自動 requeue する上限回数。`0` で無効 |
 | `ignore_exceed` | boolean | `false`（global 設定またはデフォルト由来） | `takt run` / `takt watch` の iteration 上限無視を設定します。CLI で `--ignore-exceed` を指定した場合は CLI 指定が優先されます |
@@ -1936,6 +1938,8 @@ pipeline:
 | `{issue}` | コミットメッセージ、PR 本文 | Issue 番号 |
 | `{issue_body}` | PR 本文 | Issue 本文 |
 | `{report}` | PR 本文 | Workflow 実行レポート |
+
+`--pipeline` の既定の PR 本文は `pr_issue_keyword` に従います。`pr_body_template` を指定した場合はそのまま展開されるため、`Refs #{issue}` にするか行を省くかはテンプレート側で書いてください。このキーはテンプレートの文面を書き換えません。
 
 ### Pipeline CLI オプション
 
