@@ -159,6 +159,7 @@ const GLOBAL_TRACKED_KEYS = [
   'observability.session_log_exporter',
   'observability.usage_events_phase',
   'worktree_dir',
+  'worktree_provisioner',
   'allow_git_hooks',
   'allow_git_filters',
   'vcs_provider',

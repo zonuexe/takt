@@ -884,6 +884,29 @@ describe('loadGlobalConfig', () => {
     expect(loadGlobalConfig().prIssueKeyword).toBe('none');
   });
 
+  it('should load, save and reload worktree_provisioner from config.yaml', () => {
+    const taktDir = join(testHomeDir, '.takt');
+    mkdirSync(taktDir, { recursive: true });
+    writeFileSync(getGlobalConfigPath(), 'language: en\n', 'utf-8');
+    expect(loadGlobalConfig().worktreeProvisioner).toBeUndefined();
+
+    writeFileSync(
+      getGlobalConfigPath(),
+      'language: en\nworktree_provisioner:\n  create: [/opt/create.sh, --fast]\n  remove: [/opt/remove.sh]\n',
+      'utf-8',
+    );
+    invalidateGlobalConfigCache();
+    expect(loadGlobalConfig().worktreeProvisioner).toEqual({
+      create: ['/opt/create.sh', '--fast'],
+      remove: ['/opt/remove.sh'],
+    });
+
+    const config = loadGlobalConfig();
+    saveGlobalConfig(config);
+    invalidateGlobalConfigCache();
+    expect(loadGlobalConfig().worktreeProvisioner?.create).toEqual(['/opt/create.sh', '--fast']);
+  });
+
   it('should read from cache without hitting disk on second call', () => {
     const taktDir = join(testHomeDir, '.takt');
     mkdirSync(taktDir, { recursive: true });
