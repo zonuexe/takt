@@ -158,6 +158,7 @@ export class GlobalConfigManager {
       telemetry: normalizeTelemetryConfig(parsed.telemetry),
       observability: normalizeObservabilityConfig(parsed.observability),
       worktreeDir: expandOptionalHomePath(parsed.worktree_dir),
+      worktreeProvisioner: parsed.worktree_provisioner,
       allowGitHooks: parsed.allow_git_hooks,
       allowGitFilters: parsed.allow_git_filters,
       vcsProvider: parsed.vcs_provider as GlobalConfig['vcsProvider'],

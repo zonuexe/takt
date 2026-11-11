@@ -249,6 +249,10 @@ const GlobalOnlyConfigSchema = z.object({
   language: LanguageSchema.optional().default(DEFAULT_LANGUAGE),
   logging: LoggingConfigSchema.optional(),
   worktree_dir: z.string().optional(),
+  worktree_provisioner: z.object({
+    create: z.array(z.string().min(1)).min(1),
+    remove: z.array(z.string().min(1)).min(1).optional(),
+  }).strict().optional(),
   disabled_builtins: z.array(z.string()).optional().default([]),
   enable_builtin_workflows: z.boolean().optional(),
   anthropic_api_key: z.string().optional(),

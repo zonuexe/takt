@@ -61,6 +61,9 @@ export function serializeGlobalConfig(config: GlobalConfig): Record<string, unkn
   if (config.worktreeDir) {
     raw.worktree_dir = config.worktreeDir;
   }
+  if (config.worktreeProvisioner) {
+    raw.worktree_provisioner = config.worktreeProvisioner;
+  }
   if (config.allowGitHooks !== undefined) {
     raw.allow_git_hooks = config.allowGitHooks;
   }
