@@ -11,8 +11,12 @@ import type { ProviderType } from '../../shared/types/provider.js';
 import type { PermissionMode } from './types.js';
 import type { QualityGate, RateLimitFallbackConfig, StepProviderOptions, WorkflowRuntimeConfig } from './workflow-types.js';
 import type { ProviderPermissionProfiles } from './provider-profiles.js';
-import type { VcsProviderType } from './vcs-types.js';
+import type { PrIssueKeyword, VcsProviderType } from './vcs-types.js';
 
+export interface WorktreeProvisionerConfig {
+  create: string[];
+  remove?: string[];
+}
 export type RoutingTier = 'high' | 'medium' | 'low';
 export const MANAGER_NOTIFICATION_KINDS = ['question', 'awaiting_merge', 'completed', 'progress', 'blocked', 'custom'] as const;
 export type ManagerNotificationKind = typeof MANAGER_NOTIFICATION_KINDS[number];
@@ -374,6 +378,8 @@ export interface ProjectConfig {
   autoPr?: boolean;
   /** Create PR as draft */
   draftPr?: boolean;
+  /** How the PR body references the bound issue (closes | refs | none; default closes) */
+  prIssueKeyword?: PrIssueKeyword;
   /** VCS provider selection (github or gitlab) */
   vcsProvider?: VcsProviderType;
   /** Base branch to clone from (overrides global baseBranch) */
@@ -461,6 +467,12 @@ export interface GlobalConfig extends Omit<ProjectConfig, 'submodules' | 'withSu
   logging?: LoggingConfig;
   /** Directory for shared clones (worktree_dir in config). If empty, uses ../{clone-name} relative to project */
   worktreeDir?: string;
+  /**
+   * @globalOnly
+   * Commands that create/remove the working directory of a `worktree: true` task instead of
+   * TAKT's isolated `git clone`. Each is an argv array run with the project root as cwd.
+   */
+  worktreeProvisioner?: WorktreeProvisionerConfig;
   /** @globalOnly */
   /** List of builtin workflow/agent names to exclude from fallback loading */
   disabledBuiltins?: string[];

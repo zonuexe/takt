@@ -10,6 +10,7 @@ const mockStripTaktManagedPrMarker = vi.fn((body: string) => body
   .replace(/\n{3,}/g, '\n\n')
   .trimEnd());
 const mockCreatePullRequest = vi.fn();
+const mockResolveConfigValue = vi.fn();
 const mockExpandPipelineTemplate = vi.fn();
 const mockCreatePullRequestSafely = vi.fn((
   provider: { createPullRequest: (options: unknown, cwd: string) => unknown },
@@ -20,6 +21,10 @@ const mockCreatePullRequestSafely = vi.fn((
 vi.mock('../features/pipeline/templateExpander.js', () => ({
   expandPipelineTemplate: (...args: unknown[]) =>
     mockExpandPipelineTemplate(...(args as [string, Record<string, string>])),
+}));
+
+vi.mock('../infra/config/index.js', () => ({
+  resolveConfigValue: (...args: unknown[]) => mockResolveConfigValue(...args),
 }));
 
 vi.mock('../infra/git/index.js', () => ({
@@ -47,6 +52,7 @@ const { submitPullRequest } = await import('../features/pipeline/prSubmission.js
 describe('submitPullRequest', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockResolveConfigValue.mockReturnValue(undefined);
     mockBuildPrBody.mockReturnValue('Default PR body');
     mockExpandPipelineTemplate.mockImplementation(
       (template: string, vars: Record<string, string>) => template
@@ -149,5 +155,43 @@ describe('submitPullRequest', () => {
       title: '[#43] Fix pipeline marker',
     }, '/repo');
     expect(mockBuildTaktManagedPrOptions).not.toHaveBeenCalled();
+  });
+
+  it.each(['refs', 'none'] as const)('should pass pr_issue_keyword %s to the default PR body', (keyword) => {
+    mockResolveConfigValue.mockImplementation((_cwd: string, key: string) => (
+      key === 'prIssueKeyword' ? keyword : undefined
+    ));
+    mockCreatePullRequest.mockReturnValueOnce({ success: true, url: 'https://example.com/pr/9' });
+    const issue = { number: 42, title: 'Fix pipeline', body: 'Issue body', labels: [], comments: [] };
+
+    submitPullRequest('/repo', 'takt/issue-42', 'main', { issue }, 'default', undefined, {
+      draftPr: false,
+      repo: 'owner/repo',
+      task: undefined,
+    });
+
+    expect(mockResolveConfigValue).toHaveBeenCalledWith('/repo', 'prIssueKeyword');
+    expect(mockBuildPrBody).toHaveBeenCalledWith([issue], expect.any(String), undefined, keyword);
+  });
+
+  it('should leave the keyword to pipeline.pr_body_template when a template is set', () => {
+    mockResolveConfigValue.mockImplementation((_cwd: string, key: string) => (
+      key === 'prIssueKeyword' ? 'none' : undefined
+    ));
+    mockCreatePullRequest.mockReturnValueOnce({ success: true, url: 'https://example.com/pr/10' });
+
+    submitPullRequest('/repo', 'takt/issue-42', 'main', {
+      issue: { number: 42, title: 'T', body: 'B', labels: [], comments: [] },
+    }, 'default', { prBodyTemplate: '{issue_body}\nCloses #{issue}' }, {
+      draftPr: false,
+      repo: 'owner/repo',
+      task: undefined,
+    });
+
+    expect(mockBuildPrBody).not.toHaveBeenCalled();
+    expect(mockCreatePullRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ body: 'B\nCloses #42' }),
+      '/repo',
+    );
   });
 });

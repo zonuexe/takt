@@ -5,6 +5,7 @@
  * from git/types.ts and contain no provider-specific logic.
  */
 
+import type { PrIssueKeyword } from '../../core/models/vcs-types.js';
 import type { CreatePrOptions, Issue, PrReviewComment, PrReviewData } from './types.js';
 
 export const TAKT_MANAGED_PR_MARKER = '<!-- takt:managed -->';
@@ -267,9 +268,15 @@ export function formatPrReviewAsTask(prReview: PrReviewData, transformBody: (bod
 
 /**
  * Build PR body from issues and execution report.
- * Supports multiple issues (adds "Closes #N" for each).
+ * Supports multiple issues (adds one "<Keyword> #N" line for each).
+ * `issueKeyword` selects `Closes` (default), `Refs`, or no issue line (`none`).
  */
-export function buildPrBody(issues: Issue[] | undefined, report: string, orderContent?: string): string {
+export function buildPrBody(
+  issues: Issue[] | undefined,
+  report: string,
+  orderContent?: string,
+  issueKeyword: PrIssueKeyword = 'closes',
+): string {
   const parts: string[] = [];
   const summary = issues && issues.length > 0
     ? issues[0]!.body || issues[0]!.title
@@ -288,9 +295,10 @@ export function buildPrBody(issues: Issue[] | undefined, report: string, orderCo
   parts.push('');
   parts.push(report);
 
-  if (issues && issues.length > 0) {
+  if (issues && issues.length > 0 && issueKeyword !== 'none') {
+    const label = issueKeyword === 'refs' ? 'Refs' : 'Closes';
     parts.push('');
-    parts.push(issues.map((issue) => `Closes #${issue.number}`).join('\n'));
+    parts.push(issues.map((issue) => `${label} #${issue.number}`).join('\n'));
   }
 
   return parts.join('\n');

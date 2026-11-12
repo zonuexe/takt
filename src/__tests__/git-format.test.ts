@@ -189,6 +189,32 @@ describe('buildPrBody', () => {
   });
 });
 
+describe('buildPrBody issue keyword', () => {
+  const issues: Issue[] = [
+    { number: 5, title: 'first', body: 'first body', labels: [], comments: [] },
+    { number: 7, title: 'second', body: 'second body', labels: [], comments: [] },
+  ];
+
+  it('writes Closes lines by default and for closes', () => {
+    expect(buildPrBody(issues, 'report')).toContain('Closes #5\nCloses #7');
+    expect(buildPrBody(issues, 'report', undefined, 'closes')).toContain('Closes #5\nCloses #7');
+  });
+
+  it('writes Refs lines for every issue and no closing keyword for refs', () => {
+    const result = buildPrBody(issues, 'report', undefined, 'refs');
+
+    expect(result).toContain('Refs #5\nRefs #7');
+    expect(result).not.toContain('Closes');
+  });
+
+  it('omits the issue line for none but keeps the issue summary', () => {
+    const result = buildPrBody(issues, 'report', undefined, 'none');
+
+    expect(result).toContain('first body');
+    expect(result).not.toMatch(/Closes|Refs|#5|#7/);
+  });
+});
+
 describe('buildTaktManagedPrOptions', () => {
   it('managed PR 契約を body marker だけで返す', () => {
     const result = buildTaktManagedPrOptions('Report text');

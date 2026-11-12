@@ -1600,6 +1600,25 @@ describe('loadProjectConfig snake_case normalization', () => {
     expect((config as Record<string, unknown>).draft_pr).toBeUndefined();
   });
 
+  it('should normalize pr_issue_keyword → prIssueKeyword and remove snake_case key', () => {
+    const projectConfigDir = getProjectConfigDir(testDir);
+    mkdirSync(projectConfigDir, { recursive: true });
+    writeFileSync(join(projectConfigDir, 'config.yaml'), 'pr_issue_keyword: refs\n');
+
+    const config = loadProjectConfig(testDir);
+
+    expect(config.prIssueKeyword).toBe('refs');
+    expect((config as Record<string, unknown>).pr_issue_keyword).toBeUndefined();
+  });
+
+  it('should reject an unknown pr_issue_keyword value', () => {
+    const projectConfigDir = getProjectConfigDir(testDir);
+    mkdirSync(projectConfigDir, { recursive: true });
+    writeFileSync(join(projectConfigDir, 'config.yaml'), 'pr_issue_keyword: fixes\n');
+
+    expect(() => loadProjectConfig(testDir)).toThrow();
+  });
+
   it('should normalize base_branch → baseBranch and remove snake_case key', () => {
     const projectConfigDir = getProjectConfigDir(testDir);
     mkdirSync(projectConfigDir, { recursive: true });
@@ -1731,6 +1750,15 @@ describe('saveProjectConfig snake_case denormalization', () => {
 
     expect(saved.draftPr).toBe(true);
     expect((saved as Record<string, unknown>).draft_pr).toBeUndefined();
+  });
+
+  it('should persist prIssueKeyword as pr_issue_keyword and reload correctly', () => {
+    saveProjectConfig(testDir, { prIssueKeyword: 'none' });
+
+    const saved = loadProjectConfig(testDir);
+
+    expect(saved.prIssueKeyword).toBe('none');
+    expect((saved as Record<string, unknown>).pr_issue_keyword).toBeUndefined();
   });
 
   it('should persist baseBranch as base_branch and reload correctly', () => {

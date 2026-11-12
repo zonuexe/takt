@@ -36,6 +36,12 @@ import {
 } from '../../shared/utils/gitBranchValidation.js';
 import { isTaskAbortError, TASK_EXECUTION_ABORTED_MESSAGE } from './clone-errors.js';
 import { createTaskClonePath, createTempClonePath } from './clone-path.js';
+import {
+  getWorktreeProvisioner,
+  provisionWorktree,
+  provisionWorktreeAbortable,
+  removeProvisionedWorktree,
+} from './worktree-provisioner.js';
 import { resolveGeneratedBranch, resolveGeneratedBranchAbortable } from './clone-generated-branch.js';
 
 export type { WorktreeOptions, WorktreeResult };
@@ -198,7 +204,18 @@ export class CloneManager {
       }
     }
 
-    if (options.branch && remoteBranchExists(projectDir, branch)) {
+    const provisioner = getWorktreeProvisioner();
+    if (provisioner) {
+      const existing = Boolean(options.branch)
+        && (remoteBranchExists(projectDir, branch) || localBranchExists(projectDir, branch));
+      provisionWorktree(provisioner, {
+        projectDir,
+        path: clonePath,
+        branch,
+        mode: existing ? 'existing' : 'new',
+        ...(existing ? {} : { baseBranch: CloneManager.resolveBaseBranchName(projectDir, options.baseBranch) }),
+      });
+    } else if (options.branch && remoteBranchExists(projectDir, branch)) {
       cloneAndIsolate(projectDir, clonePath);
       fetchRemoteBranchIntoIsolatedClone(projectDir, clonePath, branch);
       execFileSync('git', ['checkout', '-B', branch, toLocalBranchRef(branch)], {
@@ -320,7 +337,19 @@ export class CloneManager {
       }
     }
 
-    if (options.branch && await remoteBranchExistsAbortable(projectDir, branch, abortSignal)) {
+    const provisioner = getWorktreeProvisioner();
+    if (provisioner) {
+      const existing = Boolean(options.branch)
+        && (await remoteBranchExistsAbortable(projectDir, branch, abortSignal)
+          || await localBranchExistsAbortable(projectDir, branch, abortSignal));
+      await provisionWorktreeAbortable(provisioner, {
+        projectDir,
+        path: clonePath,
+        branch,
+        mode: existing ? 'existing' : 'new',
+        ...(existing ? {} : { baseBranch: CloneManager.resolveBaseBranchName(projectDir, options.baseBranch) }),
+      }, abortSignal);
+    } else if (options.branch && await remoteBranchExistsAbortable(projectDir, branch, abortSignal)) {
       await cloneAndIsolateAbortable(projectDir, clonePath, undefined, abortSignal);
       await fetchRemoteBranchIntoIsolatedCloneAbortable(projectDir, clonePath, branch, abortSignal);
       await runGitCommandAbortable(
@@ -430,6 +459,11 @@ export class CloneManager {
   removeClone(clonePath: string, options?: CloneCleanupOptions): void {
     log.info('Removing clone', { path: clonePath });
     try {
+      const provisioner = getWorktreeProvisioner();
+      if (provisioner && removeProvisionedWorktree(provisioner, clonePath)) {
+        log.info('Clone removed by worktree_provisioner', { path: clonePath });
+        return;
+      }
       fs.rmSync(clonePath, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
       log.info('Clone removed', { path: clonePath });
     } catch (err) {

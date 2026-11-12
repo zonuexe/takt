@@ -219,6 +219,7 @@ dynamic parallel と `dynamic_facets` の selector は読み取り専用で、`R
 | `auto_pr` | boolean | - | worktree 実行後に PR を自動作成 |
 | `caccia` | object | `{ enabled: false, wait_timeout_ms: 1800000, max_iterations: 3, workflow: "caccia" }` | CodeRabbit レビューループの設定 |
 | `draft_pr` | boolean | `false` | 自動作成する PR を draft として作成 |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes` | TAKT が書く PR 本文での、Issue 付きタスクの Issue の参照のしかた。`Closes #N`（マージ時に Issue を自動クローズ）、`Refs #N`、または Issue 行なし。`takt run` / `takt watch` の PR 本文と更新コメント、`takt add` と MCP で作ったタスク、`--pipeline` の既定本文に適用されます。`pipeline.pr_body_template` はそのまま使われ、このキーの影響を受けません。 |
 | `minimal_output` | boolean | `false` | AI 出力を抑制（CI 向け） |
 | `runtime` | object | - | ランタイム環境デフォルト（例: `prepare: [gradle, node]`） |
 | `provider_routing` | object | - | 推奨設定。raw persona キー、step tag、step name による workflow step の provider / model / provider_options ルーティング |
@@ -250,7 +251,7 @@ dynamic parallel と `dynamic_facets` の selector は読み取り専用で、`R
 | `auto_fetch` | boolean | `false` | クローン作成前にリモートを fetch してクローンを最新に保つ |
 | `base_branch` | string | - | クローン作成のベースブランチ（デフォルトはリモートのデフォルトブランチ） |
 | `workflow_categories_file` | string | - | カテゴリファイルのパス（[Workflow カテゴリ](#workflow-カテゴリ) 参照。デフォルトのユーザー上書きは `workflow-categories.yaml`） |
-| `vcs_provider` | `"github"` \| `"gitlab"` | 自動検出 | VCS プロバイダー（git リモート URL から自動検出） |
+| `vcs_provider` | `"github"` \| `"gitlab"` | 自動検出 | VCS プロバイダー。`origin` のホスト名から自動検出します（[clone でのリポジトリの指定](#clone-でのリポジトリの指定)）。それ以外のホストでは設定してください |
 | `takt_providers` | object | - | TAKT 内部プロバイダー上書き。`assistant` は assistant 会話（インタラクティブモードの計画会話、既存タスクへの追加指示 (instruct)、リトライ対話）をルーティングし、OpenCode の report retry 失敗後の Report phase fallback provider としても使われます。project の `takt_providers.assistant` は global の `takt_providers.assistant` を上書きします。どちらも未設定の場合、Report phase fallback は無効で、top-level `provider` / `model` は暗黙 fallback として使われません。 |
 | `telemetry` | object | `{ routing_decisions: false }` | local-only の routing decision 記録。デフォルト無効（opt-in）です。`takt telemetry enable` または `routing_decisions: true` で有効化すると、auto-routing decision を project `.takt/events/` 配下に NDJSON として書き込みます。TAKT は routing decision をアップロードしません。 |
 | `analytics` | object | 無効 | local-only の analytics 収集。`enabled` で有効化し、`events_path` でイベントディレクトリを変更（デフォルト `~/.takt/analytics/events`）、`retention_days` で `takt purge` が適用する保持期間を設定します（デフォルト: 30日）。TAKT は analytics イベントをアップロードしません。 |
@@ -411,6 +412,7 @@ OpenCode の `event_limit` は既定で 500,000、`text_byte_limit` は 1 MiB、
 | `auto_pr` | boolean | - | worktree 実行後に PR を自動作成 |
 | `caccia` | object | 無効 | CodeRabbit レビューループ設定（上記参照） |
 | `draft_pr` | boolean | `false`（global 設定由来） | 自動作成する PR を draft として作成 |
+| `pr_issue_keyword` | `"closes"` \| `"refs"` \| `"none"` | `closes`（global 設定由来） | global 設定のキーと同じです。project の値が優先されます。 |
 | `concurrency` | number (1-10) | `1`（global 設定由来） | `takt run` / `takt watch` の並列タスク数 |
 | `auto_requeue_max_attempts` | 非負整数 | `0`（global 設定またはデフォルト由来） | `takt run` / `takt watch` 中に失敗した workflow task を自動 requeue する上限回数。`0` で無効 |
 | `ignore_exceed` | boolean | `false`（global 設定またはデフォルト由来） | `takt run` / `takt watch` の iteration 上限無視を設定します。CLI で `--ignore-exceed` を指定した場合は CLI 指定が優先されます |
@@ -419,7 +421,7 @@ OpenCode の `event_limit` は既定で 500,000、`text_byte_limit` は 1 MiB、
 | `assistant.formal_spec` | boolean \| `"Y/n"` \| `"y/N"` \| object | mode `"y/N"`、comments `true`（global 設定またはデフォルト由来） | 要件を Alloy／Quint の両方の記法でも表現するガイダンスを追加するプロジェクト上書きです。object 形式では `mode`、`comments`、`model_check_timeout_seconds` を独立して指定でき、未指定フィールドは global またはデフォルトへフォールバックします。`comments: false` は自然言語の意味コメント指示だけを外し、形式仕様の量・要件網羅・構文と正確性の指示は維持します。`"Y/n"`／`"y/N"` への回答はセッション内だけで保持し、会話の再開時には改めて解決します。ACP と非 TTY では質問せず設定の既定回答を採用します。Gherkin のガイダンスは開発・実装タスクにだけ適用されます。廃止済みの `assistant.gherkin` は警告後に無視され、変換・永続化・ファイル更新は行いません。 manager もこの設定を使い、質問せず `true`／`"Y/n"` では両記法を含め、`false`／`"y/N"` では含めません。TUI・Slack の manager の会話でも `/verify` を使えます。 |
 | `provider_options` | object | - | provider 固有オプション |
 | `provider_profiles` | object | - | provider 固有のパーミッションプロファイル |
-| `vcs_provider` | `"github"` \| `"gitlab"` | 自動検出 | VCS プロバイダー（グローバルを上書き） |
+| `vcs_provider` | `"github"` \| `"gitlab"` | 自動検出 | VCS プロバイダー（グローバル設定と自動検出を上書き） |
 | `takt_providers` | object | - | TAKT 内部プロバイダー上書き。project の `takt_providers.assistant` は global assistant provider/model を上書きし、assistant 会話（インタラクティブモードの計画会話、既存タスクへの追加指示 (instruct)、リトライ対話）と、OpenCode の report retry 失敗後の Report phase fallback に使われます。project と global の assistant がどちらも未設定の場合、Report phase fallback は無効で、top-level `provider` / `model` は暗黙 fallback として使われません。 |
 | `workflow_mcp_servers` | object | - | MCP サーバートランスポートポリシー（グローバルを上書き） |
 | `workflow_arpeggio` | object | - | Arpeggio カスタムコードポリシー（グローバルを上書き） |
@@ -487,6 +489,18 @@ workflow_system_commands:
 別cloneでの実行にも元のproject設定を使います。各実行で許可を解決し、rootと子workflowへ同じ値を渡します。`wait`中は再解決しません。
 
 pipeline または対話モードが現在のディレクトリに PR をチェックアウトする場合は、切り替え前の設定から許可を決めます。対話セッションでは Issue に切り替えた後も同じディレクトリでこの許可を使います。PR が追加した project 設定だけでは許可されません。
+
+## clone でのリポジトリの指定
+
+`worktree: true` のタスクは `origin` リモートのない clone で動くため、そこでは `gh` や `glab` が git リモートからリポジトリを特定できません。TAKT はプロジェクトルートの `origin` を読み、そのタスクのエージェントのステップ、コマンドの品質ゲート、system の `command` 入力にリポジトリを渡します。
+
+- GitHub: `GH_REPO=HOST/OWNER/REPO`。gh の既定のホストが `github.com` とは限らないため、`github.com` でもホストを必ず付けます。ssh 専用のホスト `ssh.github.com` と `altssh.gitlab.com` は、それぞれ `github.com` と `gitlab.com` として扱います。`GH_ENTERPRISE_TOKEN` または `GITHUB_ENTERPRISE_TOKEN` が設定されているときは、`GH_HOST` が同じホストを指す場合に限って GitHub Enterprise Server のホストを付けます。呼び出し側がそのトークンのために設定していないホストへ、トークンを向けないためです。
+- GitLab: `GITLAB_REPO=SCHEME://HOST/GROUP/.../PROJECT`。スキームは origin のものです（`http` は `http` のまま、ssh の origin は `https`）。`GITLAB_TOKEN`、`GITLAB_ACCESS_TOKEN`、`OAUTH_TOKEN` のいずれかが設定されているときは、`GITLAB_HOST`（または `GITLAB_URI` / `GL_HOST`）が同じスキーム、ホスト、実効ポート（`http` は 80、`https` は 443。スキームのない値は `https` とみなします）を指す場合に限って付けます。トークンを設定したホストとは別のホストを TAKT が指定しないようにするためです。比較するのは環境変数だけで、glab はプロトコルと API のホストを、これらの変数のスキームではなく自身の設定（`api_protocol`、`api_host`）から決めます。TAKT はその設定を見られません。
+- リポジトリは常にプロジェクトルートの `origin` で、ホストは通常の DNS 名（または角括弧付きの IPv6 アドレス）でなければなりません。それ以外は無視します。`origin` が fork で、`gh repo set-default` で upstream を選んでいる場合、TAKT はその選択（`remote.<name>.gh-resolved`）を読まず、fork を指定してしまいます。その場合は `GH_REPO` を自分で設定してください。設定した値はそのまま渡されます。
+
+利用者がすでに設定している変数は上書きしません。リモートや認証情報は追加せず、URL に含まれるユーザー名やトークンも使いません。プロジェクトルートで動くタスク、`origin` がないか URL として認識できない場合、プロバイダーが分からない場合は何も追加しません。system の `command` 入力は `HOME` なしで動くため、そこでの `gh` / `glab` には別途認証が必要です。
+
+プロバイダーは `vcs_provider` が設定されていればそれ（プロジェクトがグローバルを上書き）を使い、なければ `origin` のホスト名から検出します。`github.com` と `gitlab.com`、`ghe.com` のサブドメイン（GitHub）、次に `.` で区切ったラベルのうち `github` か `gitlab` のどちらか一方にちょうど一致するものがあるホスト名（`github.example.com`、`gitlab.example.com` など）です。両方を含むホスト名やどちらも含まないホスト名（`ghe.corp.example` など）、`github.com-work` のような ssh の別名は検出しないので、`vcs_provider` を設定してください。TAKT が GitHub と GitLab を選ぶほかの箇所も同じ検出を使います。
 
 ## 環境変数上書き
 
@@ -1970,6 +1984,8 @@ pipeline:
 | `{issue}` | コミットメッセージ、PR 本文 | Issue 番号 |
 | `{issue_body}` | PR 本文 | Issue 本文 |
 | `{report}` | PR 本文 | Workflow 実行レポート |
+
+`--pipeline` の既定の PR 本文は `pr_issue_keyword` に従います。`pr_body_template` を指定した場合はそのまま展開されるため、`Refs #{issue}` にするか行を省くかはテンプレート側で書いてください。このキーはテンプレートの文面を書き換えません。
 
 ### Pipeline CLI オプション
 

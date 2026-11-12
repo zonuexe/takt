@@ -36,7 +36,8 @@ function parseProviderOption(value: string): ProviderType {
 program
   .name('takt')
   .description('TAKT: TAKT Agent Koordination Topology')
-  .version(cliVersion);
+  // tadsan fork build: label only the --version output; cliVersion stays the semver for update checks.
+  .version(`${cliVersion}-tadsan`);
 
 // --- Global options ---
 program

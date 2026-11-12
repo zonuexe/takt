@@ -8,6 +8,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- clone で動くタスク（`worktree: true`）で、`gh` と `glab` にプロジェクトのリポジトリを渡すようにしました。clone には `origin` がないため、これらの CLI は git リモートからリポジトリを特定できませんでした。TAKT はプロジェクトルートの `origin` を読み、エージェントのステップ、コマンドの品質ゲート、system の `command` 入力に `GH_REPO` または `GITLAB_REPO` を渡します。リモートや認証情報は追加せず、利用者が設定した変数は上書きしません。環境変数に GitLab のトークンがあるときは、`GITLAB_HOST` が同じホストを指す場合に限って `GITLAB_REPO` を渡し、GitHub Enterprise のトークンがあるときは、`GH_HOST` が同じホストを指す場合に限って GitHub Enterprise Server のホストを渡します。詳しくは [clone でのリポジトリの指定](configuration.ja.md#clone-でのリポジトリの指定) を参照してください。
+- `pr_issue_keyword`（`closes` | `refs` | `none`、既定は `closes`）で、TAKT が書く PR 本文での Issue 付きタスクの参照のしかたを `Closes #N`、`Refs #N`、Issue 行なしから選べるようにしました。global または project の `config.yaml` に書き、project が優先されます。`takt run` / `takt watch` の PR 本文と更新コメント、`takt add` や MCP で作ったタスク、`--pipeline` の既定本文に適用され、`pipeline.pr_body_template` はそのまま使われます。
+
+### Changed
+
+- GitHub / GitLab の自動検出が、`ghe.com` のサブドメインと、ラベルのうち `github` か `gitlab` の一方にちょうど一致するものがあるセルフホストのホスト名（`github.example.com`、`gitlab.example.com` など）も認識するようになりました。`vcs_provider` が引き続き優先され、両方を含むホスト名やどちらも含まないホスト名は検出しません。
+
 ### Fixed
 
 - プロジェクトルートが shallow clone のとき、worktree タスクが `Git clone failed` で失敗する問題を修正しました。Git はエラーメッセージにリポジトリのパスを引用符付きで含める（"reference repository '<path>' is shallow"）ため、`--reference` なしの通常クローンへのフォールバックが動作していませんでした。引用符付きと引用符なしの両方の表記を判定するようにしました。
