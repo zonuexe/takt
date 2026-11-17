@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `pr_issue_keyword` (`closes` | `refs` | `none`, default `closes`) chooses how PR bodies written by TAKT reference an issue-backed task: `Closes #N`, `Refs #N`, or no issue line. Set it in the global or project `config.yaml` (project wins). It applies to `takt run` / `takt watch` PR bodies and update comments, tasks from `takt add` or MCP, and the default `--pipeline` body; a custom `pipeline.pr_body_template` is used as written.
+
 ## [0.76.1] - 2026-11-17
 
 ### Fixed

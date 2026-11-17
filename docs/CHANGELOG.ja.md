@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `pr_issue_keyword`（`closes` | `refs` | `none`、既定は `closes`）で、TAKT が書く PR 本文での Issue 付きタスクの参照のしかたを `Closes #N`、`Refs #N`、Issue 行なしから選べるようにしました。global または project の `config.yaml` に書き、project が優先されます。`takt run` / `takt watch` の PR 本文と更新コメント、`takt add` や MCP で作ったタスク、`--pipeline` の既定本文に適用され、`pipeline.pr_body_template` はそのまま使われます。
+
 ## [0.76.1] - 2026-11-17
 
 ### Fixed

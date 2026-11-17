@@ -5,6 +5,7 @@
  * instructBranch (takt list).
  */
 
+import { resolveConfigValue } from '../../../infra/config/index.js';
 import { autoCommitAndPush } from '../../../infra/task/index.js';
 import { pushBranch } from '../../../infra/task/git.js';
 import { info, error, success } from '../../../shared/ui/index.js';
@@ -189,7 +190,7 @@ export async function postExecutionFlow(options: PostExecutionOptions): Promise<
     const resolvedGitProvider = gitProvider ?? getGitProvider();
     const report = workflowIdentifier ? `Workflow \`${workflowIdentifier}\` completed successfully.` : 'Task completed successfully.';
     const existingPr = resolvedGitProvider.findExistingPr(branch, projectCwd);
-    const prBody = stripTaktManagedPrMarker(buildPrBody(issues, report, orderContent));
+    const prBody = stripTaktManagedPrMarker(buildPrBody(issues, report, orderContent, resolveConfigValue(projectCwd, 'prIssueKeyword')));
     if (existingPr) {
       abortSignal?.throwIfAborted();
       const commentResult = resolvedGitProvider.commentOnPr(existingPr.number, prBody, projectCwd);

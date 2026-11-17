@@ -4,7 +4,9 @@ import {
   getGitProvider,
   stripTaktManagedPrMarker,
 } from '../../infra/git/index.js';
+import { resolveConfigValue } from '../../infra/config/index.js';
 import type { CreatePrResult, Issue } from '../../infra/git/index.js';
+import type { PrIssueKeyword } from '../../core/models/vcs-types.js';
 import type { PipelineConfig } from '../../core/models/index.js';
 import type { PipelineExecutionOptions } from '../tasks/index.js';
 import { error, info, success } from '../../shared/ui/index.js';
@@ -18,6 +20,7 @@ function buildPipelinePrBody(
   pipelineConfig: PipelineConfig | undefined,
   issue: Issue | undefined,
   report: string,
+  issueKeyword: PrIssueKeyword | undefined,
 ): string {
   const template = pipelineConfig?.prBodyTemplate;
   if (template) {
@@ -28,7 +31,7 @@ function buildPipelinePrBody(
       report,
     });
   }
-  return buildPrBody(issue ? [issue] : undefined, report);
+  return buildPrBody(issue ? [issue] : undefined, report, undefined, issueKeyword);
 }
 
 function requireBaseBranch(baseBranch: string | undefined): string {
@@ -50,7 +53,12 @@ export function submitPullRequest(
   info('Creating pull request...');
   const prTitle = taskContent.issue ? `[#${taskContent.issue.number}] ${taskContent.issue.title}` : (options.task ?? 'Pipeline task');
   const report = `Workflow \`${workflow}\` completed successfully.`;
-  const prBody = stripTaktManagedPrMarker(buildPipelinePrBody(pipelineConfig, taskContent.issue, report));
+  const prBody = stripTaktManagedPrMarker(buildPipelinePrBody(
+    pipelineConfig,
+    taskContent.issue,
+    report,
+    resolveConfigValue(projectCwd, 'prIssueKeyword'),
+  ));
 
   const prResult: CreatePrResult = createPullRequestSafely(getGitProvider(), {
     branch,

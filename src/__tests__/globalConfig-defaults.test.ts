@@ -859,6 +859,54 @@ describe('loadGlobalConfig', () => {
     expect(reloaded.autoPr).toBe(false);
   });
 
+  it('should leave pr_issue_keyword unset by default and load it from config.yaml', () => {
+    const taktDir = join(testHomeDir, '.takt');
+    mkdirSync(taktDir, { recursive: true });
+    writeFileSync(getGlobalConfigPath(), 'language: en\n', 'utf-8');
+    expect(loadGlobalConfig().prIssueKeyword).toBeUndefined();
+
+    writeFileSync(getGlobalConfigPath(), 'language: en\npr_issue_keyword: refs\n', 'utf-8');
+    invalidateGlobalConfigCache();
+
+    expect(loadGlobalConfig().prIssueKeyword).toBe('refs');
+  });
+
+  it('should save and reload pr_issue_keyword config', () => {
+    const taktDir = join(testHomeDir, '.takt');
+    mkdirSync(taktDir, { recursive: true });
+    writeFileSync(getGlobalConfigPath(), 'language: en\n', 'utf-8');
+
+    const config = loadGlobalConfig();
+    config.prIssueKeyword = 'none';
+    saveGlobalConfig(config);
+    invalidateGlobalConfigCache();
+
+    expect(loadGlobalConfig().prIssueKeyword).toBe('none');
+  });
+
+  it('should load, save and reload worktree_provisioner from config.yaml', () => {
+    const taktDir = join(testHomeDir, '.takt');
+    mkdirSync(taktDir, { recursive: true });
+    writeFileSync(getGlobalConfigPath(), 'language: en\n', 'utf-8');
+    expect(loadGlobalConfig().worktreeProvisioner).toBeUndefined();
+
+    writeFileSync(
+      getGlobalConfigPath(),
+      'language: en\nworktree_provisioner:\n  create: [/opt/create.sh, --fast]\n  remove: [/opt/remove.sh]\n',
+      'utf-8',
+    );
+    invalidateGlobalConfigCache();
+    expect(loadGlobalConfig().worktreeProvisioner).toEqual({
+      create: ['/opt/create.sh', '--fast'],
+      remove: ['/opt/remove.sh'],
+    });
+
+    const config = loadGlobalConfig();
+    saveGlobalConfig(config);
+    invalidateGlobalConfigCache();
+    expect(loadGlobalConfig().worktreeProvisioner?.create).toEqual(['/opt/create.sh', '--fast']);
+  });
+
   it('should read from cache without hitting disk on second call', () => {
     const taktDir = join(testHomeDir, '.takt');
     mkdirSync(taktDir, { recursive: true });

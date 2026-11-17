@@ -23,6 +23,7 @@ const {
   mockWritePrivateFile,
   mockRunCaccia,
   mockRunLinkedMergeSafely,
+  mockPrIssueKeyword,
 } =
   vi.hoisted(() => ({
     mockAutoCommitAndPush: vi.fn(),
@@ -39,6 +40,7 @@ const {
     mockWritePrivateFile: vi.fn(),
     mockRunCaccia: vi.fn(),
     mockRunLinkedMergeSafely: vi.fn(),
+    mockPrIssueKeyword: { value: undefined as string | undefined },
     mockStripTaktManagedPrMarker: vi.fn((body: string) => body
       .split('<!-- takt:managed -->')
       .join('')
@@ -63,7 +65,11 @@ vi.mock('../features/merge/index.js', async (original) => ({
 
 vi.mock('../infra/config/index.js', async (original) => ({
   ...await original<typeof import('../infra/config/index.js')>(),
-  resolveConfigValue: (_cwd: string, key: string) => key === 'caccia' ? { enabled: false } : undefined,
+  resolveConfigValue: (_cwd: string, key: string) => {
+    if (key === 'caccia') return { enabled: false };
+    if (key === 'prIssueKeyword') return mockPrIssueKeyword.value;
+    return undefined;
+  },
 }));
 
 vi.mock('../infra/task/index.js', () => ({
@@ -141,6 +147,7 @@ describe('postExecutionFlow', () => {
     vi.clearAllMocks();
     mockRunCaccia.mockReset();
     mockRunLinkedMergeSafely.mockReset();
+    mockPrIssueKeyword.value = undefined;
     mockAutoCommitAndPush.mockReturnValue({ success: true, commitHash: 'abc123', publishedHead: 'abc123'.padEnd(40, '0') });
     mockPushBranch.mockReturnValue(undefined);
     mockCommentOnPr.mockReturnValue({ success: true });
@@ -172,7 +179,7 @@ describe('postExecutionFlow', () => {
       body: 'pr-body',
     }));
     expect(mockCommentOnPr).not.toHaveBeenCalled();
-    expect(mockBuildPrBody).toHaveBeenCalledWith(undefined, expect.any(String), undefined);
+    expect(mockBuildPrBody).toHaveBeenCalledWith(undefined, expect.any(String), undefined, undefined);
     expect(mockBuildTaktManagedPrOptions).not.toHaveBeenCalled();
   });
 
@@ -276,6 +283,7 @@ describe('postExecutionFlow', () => {
       undefined,
       expect.any(String),
       '## Task\n\nUse order.md as the PR summary.',
+      undefined,
     );
     expect(mockCreatePullRequest).toHaveBeenCalledTimes(1);
   });
@@ -314,6 +322,41 @@ describe('postExecutionFlow', () => {
     expect(String(createOptions.body)).toContain('Closes #12');
     expect(String(createOptions.body)).not.toContain(TAKT_MANAGED_PR_MARKER);
     expect(mockBuildTaktManagedPrOptions).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['refs', 'Refs #12', 'Closes'],
+    ['closes', 'Closes #12', 'Refs'],
+  ])('prIssueKeyword %s が新規PR本文とPRコメントの issue 行に反映される', async (keyword, expected, absent) => {
+    mockPrIssueKeyword.value = keyword;
+    mockBuildPrBody.mockImplementation(buildActualPrBody);
+    const issues: Issue[] = [{ number: 12, title: 'Issue title', body: 'Issue body', labels: [], comments: [] }];
+
+    mockFindExistingPr.mockReturnValue(undefined);
+    await postExecutionFlow({ ...baseOptions, issues });
+    const [createOptions] = mockCreatePullRequest.mock.calls[0] as [Record<string, unknown>];
+    expect(String(createOptions.body)).toContain(expected);
+    expect(String(createOptions.body)).not.toContain(absent);
+
+    mockFindExistingPr.mockReturnValue({ number: 42, url: 'https://github.com/org/repo/pull/42' });
+    await postExecutionFlow({ ...baseOptions, issues });
+    const [, commentBody] = mockCommentOnPr.mock.calls[0] as [number, string, string];
+    expect(commentBody).toContain(expected);
+    expect(commentBody).not.toContain(absent);
+    expect(mockBuildPrBody).toHaveBeenLastCalledWith(issues, expect.any(String), undefined, keyword);
+  });
+
+  it('prIssueKeyword: none は issue 行を出さない', async () => {
+    mockPrIssueKeyword.value = 'none';
+    mockBuildPrBody.mockImplementation(buildActualPrBody);
+    mockFindExistingPr.mockReturnValue(undefined);
+    const issues: Issue[] = [{ number: 12, title: 'Issue title', body: 'Issue body', labels: [], comments: [] }];
+
+    await postExecutionFlow({ ...baseOptions, issues });
+
+    const [createOptions] = mockCreatePullRequest.mock.calls[0] as [Record<string, unknown>];
+    expect(String(createOptions.body)).toContain('Issue body');
+    expect(String(createOptions.body)).not.toMatch(/Closes|Refs/);
   });
 
   it('autoCommitAndPush に branch パラメータが渡される', async () => {

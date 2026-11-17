@@ -26,6 +26,7 @@ vi.mock('../infra/config/global/globalConfig.js', async (importOriginal) => {
       branchNameStrategy: 'ai',
       minimalOutput: false,
       concurrency: 2,
+      prIssueKeyword: 'closes',
       taskPollIntervalMs: 2000,
       interactivePreviewSteps: 4,
       rateLimitFallback: {
@@ -66,6 +67,7 @@ describe('IT: project-local config keys should prefer project over global', () =
         'branch_name_strategy: ai',
         'minimal_output: true',
         'concurrency: 5',
+        'pr_issue_keyword: refs',
         'task_poll_interval_ms: 1300',
         'interactive_preview_steps: 1',
         'rate_limit_fallback:',
@@ -98,12 +100,14 @@ describe('IT: project-local config keys should prefer project over global', () =
       'branchNameStrategy',
       'minimalOutput',
       'concurrency',
+      'prIssueKeyword',
       'taskPollIntervalMs',
       'interactivePreviewSteps',
       'rateLimitFallback',
       'caccia',
     ]);
 
+    expect(resolved.prIssueKeyword).toBe('refs');
     expect(resolved.pipeline).toEqual({
       defaultBranchPrefix: 'project/',
     });
@@ -173,12 +177,14 @@ describe('IT: project-local config keys should prefer project over global', () =
       'branchNameStrategy',
       'minimalOutput',
       'concurrency',
+      'prIssueKeyword',
       'taskPollIntervalMs',
       'interactivePreviewSteps',
       'rateLimitFallback',
       'caccia',
     ]);
 
+    expect(resolved.prIssueKeyword).toBe('closes');
     expect(resolved.pipeline).toEqual({ defaultBranchPrefix: 'global/' });
     expect(resolved.personaProviders).toEqual({
       coder: { provider: 'claude', model: 'claude-3-5-sonnet-latest' },

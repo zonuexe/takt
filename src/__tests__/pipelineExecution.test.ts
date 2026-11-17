@@ -700,7 +700,7 @@ describe('executePipeline', () => {
 
       // Should use buildPrBody (the mock)
       expect(mockBuildPrBody).toHaveBeenCalled();
-      expect(mockBuildPrBody).toHaveBeenCalledWith(undefined, expect.any(String));
+      expect(mockBuildPrBody).toHaveBeenCalledWith(undefined, expect.any(String), undefined, undefined);
       expect(mockCreatePullRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           body: 'Default PR body',
@@ -708,6 +708,47 @@ describe('executePipeline', () => {
         '/tmp/test',
       );
       expect(mockBuildTaktManagedPrOptions).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('pr_issue_keyword', () => {
+    it('should pass the configured keyword to the default PR body', async () => {
+      mockExecuteTask.mockResolvedValueOnce(true);
+      mockCreatePullRequest.mockReturnValueOnce({ success: true, url: 'https://github.com/pr/1' });
+      mockResolveConfigValue.mockImplementation((_projectDir: string, key: string) => (
+        key === 'prIssueKeyword' ? 'refs' : undefined
+      ));
+
+      await executePipeline({
+        task: 'Fix bug',
+        workflow: 'default',
+        branch: 'fix-branch',
+        autoPr: true,
+        cwd: '/tmp/test',
+      });
+
+      expect(mockBuildPrBody).toHaveBeenCalledWith(undefined, expect.any(String), undefined, 'refs');
+    });
+
+    it('should not consult the keyword when pipeline.pr_body_template is set', async () => {
+      mockExecuteTask.mockResolvedValueOnce(true);
+      mockCreatePullRequest.mockReturnValueOnce({ success: true, url: 'https://github.com/pr/1' });
+      mockResolveConfigValues.mockReturnValue({
+        pipeline: { prBodyTemplate: '## Summary\n{issue_body}\n\nCloses #{issue}' },
+      });
+      mockResolveConfigValue.mockImplementation((_projectDir: string, key: string) => (
+        key === 'prIssueKeyword' ? 'none' : undefined
+      ));
+
+      await executePipeline({
+        task: 'Fix bug',
+        workflow: 'default',
+        branch: 'fix-branch',
+        autoPr: true,
+        cwd: '/tmp/test',
+      });
+
+      expect(mockBuildPrBody).not.toHaveBeenCalled();
     });
   });
 

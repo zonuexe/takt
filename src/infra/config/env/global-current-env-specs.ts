@@ -24,6 +24,7 @@ export const GLOBAL_ENV_SPECS: readonly EnvSpec[] = [
   { path: 'worktree_dir', type: 'string' },
   { path: 'auto_pr', type: 'boolean' },
   { path: 'draft_pr', type: 'boolean' },
+  { path: 'pr_issue_keyword', type: 'string' },
   { path: 'disabled_builtins', type: 'json' },
   { path: 'enable_builtin_workflows', type: 'boolean' },
   { path: 'anthropic_api_key', type: 'string' },
